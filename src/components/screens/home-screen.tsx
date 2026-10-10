@@ -3,6 +3,7 @@
 import { Camera, ImagePlus, ReceiptText } from "lucide-react"
 import { useRef, useState } from "react"
 import { useBill } from "@/components/bill-context"
+import { TableBanner } from "@/components/table-banner"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -69,6 +70,8 @@ export function HomeScreen() {
             </li>
           ))}
         </ol>
+
+        <TableBanner className="mt-6" />
 
         {bill.draft ? (
           <button

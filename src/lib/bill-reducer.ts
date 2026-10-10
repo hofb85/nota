@@ -123,7 +123,7 @@ export function billReducer(state: BillState, action: BillAction): BillState {
         notice: action.notice,
         scanError: null,
         scanProgress: 1,
-        items: action.items.map(toBillItem),
+        items: action.items.slice(0, 80).map(toBillItem),
       }
     case "scan-empty":
       return {
@@ -145,6 +145,9 @@ export function billReducer(state: BillState, action: BillAction): BillState {
         ),
       }
     case "add-item":
+      if (state.items.length >= 80) {
+        return { ...state, hint: "Een rekening kan hoogstens 80 gerechten hebben." }
+      }
       return { ...state, items: [...state.items, emptyItem()] }
     case "remove-item":
       return { ...state, items: state.items.filter((item) => item.id !== action.id) }
@@ -416,6 +419,7 @@ function addGapItem(state: BillState): BillState {
   const sum = state.items.reduce((total, item) => total + item.lineTotalCents, 0)
   const gap = state.receiptTotalCents - sum
   if (gap <= 0) return state
+  if (state.items.length >= 80) return { ...state, hint: "Een rekening kan hoogstens 80 gerechten hebben." }
   return {
     ...state,
     items: [

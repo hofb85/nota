@@ -3,6 +3,7 @@
 import { Check, Plus, X } from "lucide-react"
 import { useMemo, useState, type FormEvent } from "react"
 import { useBill } from "@/components/bill-context"
+import { TableBanner } from "@/components/table-banner"
 import { PersonAvatar } from "@/components/person-avatar"
 import { ScreenFooter, ScreenHeader } from "@/components/screen-header"
 import { Button } from "@/components/ui/button"
@@ -68,6 +69,7 @@ export function AssignScreen() {
 
       <main className="mx-auto grid w-full max-w-lg gap-4 px-4 py-4 md:max-w-3xl md:grid-cols-[minmax(0,1fr)_280px] md:items-start">
         <div>
+          <TableBanner localNote className="mb-4" />
           <div className="flex gap-2 overflow-x-auto pb-1">
             {bill.people.map((person) => {
               const selected = person.id === active?.id

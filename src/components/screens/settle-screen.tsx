@@ -3,6 +3,7 @@
 import { Share2 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useBill } from "@/components/bill-context"
+import { TableBanner } from "@/components/table-banner"
 import { MoneyField } from "@/components/money-field"
 import { PersonAvatar } from "@/components/person-avatar"
 import { ScreenFooter, ScreenHeader } from "@/components/screen-header"
@@ -21,7 +22,7 @@ const TIP_PRESETS = [0, 200, 500, 1000]
 
 export function SettleScreen() {
   const bill = useBill()
-  const [copied, setCopied] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
   const [confirmNew, setConfirmNew] = useState(false)
   const summary = useMemo(
     () => summarize(bill.items, bill.people, bill.tipCents),
@@ -30,22 +31,14 @@ export function SettleScreen() {
   const venue = bill.venue.trim() || "De rekening"
 
   async function share() {
-    const text = summaryText(venue, summary)
-    if (typeof navigator.share === "function") {
-      try {
-        await navigator.share({ title: venue, text })
-        return
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 2200)
-    } catch {
-      setCopied(false)
-    }
+    const result = await bill.shareMessage(summaryText(venue, summary))
+    if (result === "copied") flash("Overzicht gekopieerd")
+    if (result === "failed") flash("Delen lukt niet op dit toestel.")
+  }
+
+  function flash(text: string) {
+    setNote(text)
+    window.setTimeout(() => setNote(null), 2200)
   }
 
   return (
@@ -58,6 +51,7 @@ export function SettleScreen() {
       />
 
       <main className="mx-auto w-full max-w-lg space-y-4 px-4 py-4 md:max-w-3xl">
+        <TableBanner localNote />
         <section className="rounded-2xl bg-card p-4 ring-1 ring-border">
           <h2 className="font-heading text-xl">Fooi, optioneel</h2>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -122,9 +116,9 @@ export function SettleScreen() {
         </p>
       </main>
 
-      {copied ? (
+      {note ? (
         <p className="fixed bottom-28 left-1/2 z-30 -translate-x-1/2 rounded-full bg-ink px-4 py-2 text-sm text-paper" role="status">
-          Overzicht gekopieerd
+          {note}
         </p>
       ) : null}
 
@@ -144,7 +138,11 @@ export function SettleScreen() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Nieuwe rekening?</DialogTitle>
-            <DialogDescription>Deze verdeling wordt gewist.</DialogDescription>
+            <DialogDescription>
+              {bill.tableLink
+                ? "Op dit toestel begin je opnieuw. Wie de oude link heeft, ziet die rekening nog."
+                : "Deze verdeling wordt gewist."}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-2">
             <Button type="button" variant="outline" className="h-11" onClick={() => setConfirmNew(false)}>

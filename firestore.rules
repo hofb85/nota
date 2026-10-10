@@ -1,0 +1,55 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /bills/{billId} {
+      allow get: if isTableId(billId);
+      allow list: if false;
+      allow create, update: if isBill(billId, request.resource.data);
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+function isTableId(billId) {
+  return billId.matches('^[A-Za-z0-9]{16,64}$');
+}
+
+function isBill(billId, data) {
+  return isTableId(billId)
+    && data.keys().hasOnly([
+      'version',
+      'step',
+      'resumeStep',
+      'venue',
+      'items',
+      'people',
+      'activePersonId',
+      'tipCents',
+      'rawText',
+      'receiptTotalCents',
+      'updatedAt'
+    ])
+    && data.version == 1
+    && data.step in ['home', 'review', 'assign', 'settle']
+    && data.resumeStep in ['review', 'assign', 'settle']
+    && data.venue is string
+    && data.venue.size() <= 60
+    && data.rawText is string
+    && data.rawText.size() <= 20000
+    && data.tipCents is int
+    && data.tipCents >= 0
+    && data.tipCents <= 50000
+    && data.updatedAt is int
+    && data.updatedAt > 0
+    && data.items is list
+    && data.items.size() <= 80
+    && data.people is list
+    && data.people.size() <= 12
+    && (data.activePersonId == null || (data.activePersonId is string && data.activePersonId.size() > 0 && data.activePersonId.size() <= 80))
+    && (data.receiptTotalCents == null || (data.receiptTotalCents is int && data.receiptTotalCents >= 0 && data.receiptTotalCents <= 100000000));
+}
