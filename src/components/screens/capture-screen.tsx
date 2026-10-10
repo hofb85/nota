@@ -24,7 +24,11 @@ export function CaptureScreen() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: false,
-          video: { facingMode: { ideal: "environment" } },
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 2560 },
+            height: { ideal: 1920 },
+          },
         })
         if (cancelled) {
           stream.getTracks().forEach((track) => track.stop())
@@ -87,7 +91,7 @@ export function CaptureScreen() {
       <div className="absolute inset-x-0 bottom-0 z-10 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto w-full max-w-lg">
           <p className="mb-4 text-center text-sm text-white drop-shadow">
-            {cameraError ?? "Houd de bon vlak, in het licht, en zorg dat de prijzen leesbaar zijn."}
+            {cameraError ?? "Vul het kader met de bon. Namen van gerechten en dranken moeten scherp zijn."}
           </p>
           <div className="flex items-center justify-center gap-6">
             <Button

@@ -47,6 +47,49 @@ describe("parseReceiptText", () => {
     expect(parsed.items).toEqual([{ name: "Leffe blond 33cl", quantity: 1, lineTotalCents: 450 }])
   })
 
+  it("houdt een merknaam die op een eigen regel staat", () => {
+    const parsed = parseReceiptText(`
+      CAFÉ ROMA
+      Grote Markt 4
+      DUVEL
+      4,50
+      JUPILER 25CL 3,40
+      2 STELLA ARTOIS 2,80 5,60
+      DRANKEN
+      Coca-Cola Zero 3,20
+      Totaal 16,70
+    `)
+
+    expect(parsed.venue).toBe("Café Roma")
+    expect(parsed.items).toEqual([
+      { name: "DUVEL", quantity: 1, lineTotalCents: 450 },
+      { name: "JUPILER 25CL", quantity: 1, lineTotalCents: 340 },
+      { name: "STELLA ARTOIS", quantity: 2, lineTotalCents: 560 },
+      { name: "Coca-Cola Zero", quantity: 1, lineTotalCents: 320 },
+    ])
+    expect(parsed.totalCents).toBe(1670)
+  })
+
+  it("plakt een doorgesneden gerechtnaam weer aan elkaar", () => {
+    const parsed = parseReceiptText(`
+      Stoofvlees met
+      friet 18,50
+      D u v e l 4,50
+    `)
+    expect(parsed.items).toEqual([
+      { name: "Stoofvlees met friet", quantity: 1, lineTotalCents: 1850 },
+      { name: "Duvel", quantity: 1, lineTotalCents: 450 },
+    ])
+  })
+
+  it("leest twee producten op één regel en een prijs zonder nul", () => {
+    const parsed = parseReceiptText("Duvel 4,50 Jupiler 3,8")
+    expect(parsed.items).toEqual([
+      { name: "Duvel", quantity: 1, lineTotalCents: 450 },
+      { name: "Jupiler", quantity: 1, lineTotalCents: 380 },
+    ])
+  })
+
   it("negeert een btw-blok met percentages", () => {
     const parsed = parseReceiptText(`
       Friet 4,50
