@@ -38,29 +38,24 @@ const BillContext = createContext<BillContextValue | null>(null)
 
 export function BillProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(billReducer, undefined, createInitialState)
-  const [ready, setReady] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
   const scanToken = useRef(0)
   const lastProgress = useRef(0)
   const lastLabel = useRef("")
 
   useEffect(() => {
-    let cancelled = false
-    const frame = window.requestAnimationFrame(() => {
-      if (cancelled) return
+    const timer = window.setTimeout(() => {
       const saved = loadBill()
       if (saved) dispatch({ type: "hydrate", state: saved })
-      setReady(true)
-    })
-    return () => {
-      cancelled = true
-      window.cancelAnimationFrame(frame)
-    }
+      setHydrated(true)
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [])
 
   useEffect(() => {
-    if (!ready || state.step === "scan") return
+    if (!hydrated || state.step === "scan") return
     saveBill(state)
-  }, [ready, state])
+  }, [hydrated, state])
 
   const runScan = useCallback(async (canvas: HTMLCanvasElement, source: "photo" | "demo") => {
     const token = ++scanToken.current
@@ -180,14 +175,6 @@ export function BillProvider({ children }: { children: ReactNode }) {
     scanToken.current += 1
     dispatch({ type: "go-back" })
   }, [])
-
-  if (!ready) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-ink text-paper">
-        <p className="font-heading text-5xl italic">Nota</p>
-      </div>
-    )
-  }
 
   const value: BillContextValue = {
     ...state,
