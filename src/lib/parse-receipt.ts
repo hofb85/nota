@@ -4,10 +4,13 @@ const PRICE_TAIL = /(\d{1,4})\s*[.,]\s*(\d{1,2})\s*(?:eur)?\s*$/i
 const SPACED_PRICE = /^(.*\p{L}.*)\s+(\d{1,3})\s+(\d{2})$/u
 
 const REJECT_LINE =
-  /^(btw|vat|contant|pin|bancontact|visa|mastercard|maestro|betaald|wisselgeld|bedankt|dank u|fooi|afronding|omzet|wissel|iban|bic|tel|gsm|www\.|https?:|factuur|kassier|ondernemings)\b/i
+  /^(btw|vat|contant|cash|pin|bancontact|visa|mastercard|maestro|betaald|wisselgeld|bedankt|dank u|fooi|afronding|omzet|wissel|iban|bic|tel|gsm|www\.|https?:|factuur|kassier|ondernemings|rekening|netto|bruto)\b/i
 
 const REJECT_NAME =
-  /^(totaal|te betalen|subtotaal|sub totaal|btw|vat|omzet|contant|bancontact|maestro|visa|mastercard|pin|pinbetaling|wisselgeld|bedankt|dank u|fooi|service|servicekost|afronding|betaald|wissel|kassier|factuur|tafel|tafel\s+\d+)$/i
+  /^(totaal|te betalen|subtotaal|sub totaal|btw|vat|omzet|contant|cash|bancontact|maestro|visa|mastercard|pin|pinbetaling|wisselgeld|bedankt|dank u|fooi|service|servicekost|afronding|betaald|wissel|kassier|factuur|rekening|netto|bruto|tafel|tafel\s+\d+)$/i
+
+const WEEKDAY =
+  /\b(maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag)\b/i
 
 const SECTION =
   /^(dranken|eten|keuken|dessert|desserts|lunch|diner|aperitief|wijnen|bieren|fris|frisdranken|gerechten|voorgerechten|hoofdgerechten|nagerechten|koude dranken|warme dranken)$/i
@@ -49,6 +52,11 @@ export function parseReceiptText(raw: string): ParsedReceipt {
         pendingName = null
         continue
       }
+      if (!seenItem && venue && isVenueContinuation(line)) {
+        venue = `${venue} ${cleanName(line)}`
+        pendingName = null
+        continue
+      }
       const nextPrice = nextPriceLine(lines, index + 1)
       if (!seenItem && !venue && looksLikeVenue(line) && !nextPrice?.only && !wantsJoin(cleanName(line))) {
         venue = prettifyVenue(line)
@@ -65,7 +73,7 @@ export function parseReceiptText(raw: string): ParsedReceipt {
     else if (pendingName && wantsJoin(pendingName) && isUsableName(name)) name = joinName(pendingName, name)
     pendingName = null
 
-    if (!isUsableName(name) || isRejectedName(name)) continue
+    if (!isUsableName(name) || isNonProductName(name)) continue
     if (parsed.quantity < 1 || parsed.quantity > 99) continue
 
     items.push({
@@ -136,7 +144,11 @@ function normalizeLine(line: string): string {
     .replace(/[._]{2,}/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-  return softenPriceTokens(collapseSpacedLetters(collapsed))
+  return stripTaxClass(softenPriceTokens(collapseSpacedLetters(collapsed)))
+}
+
+function stripTaxClass(line: string): string {
+  return line.replace(/(\d\s*[.,]\s*\d{1,2})\s*[A-D]\s*$/i, "$1")
 }
 
 function collapseSpacedLetters(line: string): string {
@@ -171,18 +183,28 @@ function centsFrom(whole: string, fraction: string): number | null {
 }
 
 function matchTotal(line: string): number | null {
-  if (/^sub\s?totaal\b/i.test(line)) return null
-  if (!/^(totaal|te betalen)\b/i.test(line)) return null
+  if (/\bsub\s?totaal\b/i.test(line)) return null
+  if (!/\b(totaal|te betalen)\b/i.test(line)) return null
   return matchPrice(line)?.cents ?? null
 }
 
 function isRejectedLine(line: string): boolean {
-  return REJECT_LINE.test(line)
+  if (REJECT_LINE.test(line)) return true
+  if (/\b(facebook|instagram)\b/i.test(line)) return true
+  return /\b[a-d]\s*[- ]\s*(hoog|laag)\b/i.test(line)
 }
 
-function isRejectedName(name: string): boolean {
-  if (REJECT_NAME.test(name)) return true
-  return /^(btw|totaal|sub\s?totaal|vat)\b/i.test(name)
+export function isNonProductName(name: string): boolean {
+  const trimmed = name.trim()
+  if (REJECT_NAME.test(trimmed)) return true
+  if (/^(btw|totaal|sub\s?totaal|vat|netto|bruto|cash|rekening)\b/i.test(trimmed)) return true
+  if (/\b(facebook|instagram)\b/i.test(trimmed)) return true
+  if (/\b[a-d]\s*[- ]\s*(hoog|laag)\b/i.test(trimmed)) return true
+  return /\d+\s*%/.test(trimmed)
+}
+
+function isVenueContinuation(line: string): boolean {
+  return /^(caf[eé]|bar|brasserie|restaurant|bistro|taverne)$/i.test(cleanName(line))
 }
 
 function isSection(line: string): boolean {
@@ -194,6 +216,10 @@ function isMetaLine(line: string): boolean {
   if (/^\d{1,2}:\d{2}\b/.test(line)) return true
   if (/^\d{4}\b/.test(line)) return true
   if (/^(tel|gsm|btw|iban|www\.|https?:)/i.test(line)) return true
+  if (line.includes("@")) return true
+  if (/^be\s?\d{8,}/i.test(line)) return true
+  if (WEEKDAY.test(line)) return true
+  if (/^#\d{3,}\b/.test(line)) return true
   return false
 }
 
@@ -203,7 +229,7 @@ function isAddress(line: string): boolean {
 }
 
 function looksLikeVenue(line: string): boolean {
-  if (isMetaLine(line) || isAddress(line) || isRejectedLine(line) || isRejectedName(line) || isSection(line)) {
+  if (isMetaLine(line) || isAddress(line) || isRejectedLine(line) || isNonProductName(line) || isSection(line)) {
     return false
   }
   if (line.length > 42) return false
@@ -211,7 +237,7 @@ function looksLikeVenue(line: string): boolean {
 }
 
 function looksLikePendingName(line: string): boolean {
-  if (isMetaLine(line) || isAddress(line) || isRejectedLine(line) || isRejectedName(line) || isSection(line)) {
+  if (isMetaLine(line) || isAddress(line) || isRejectedLine(line) || isNonProductName(line) || isSection(line)) {
     return false
   }
   if (line.length > 60) return false

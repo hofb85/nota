@@ -21,12 +21,14 @@ import {
   renderDemoReceipt,
 } from "@/lib/demo-receipt"
 import { isFirebaseConfigured } from "@/lib/firebase"
+import { readReceiptWithGemini } from "@/lib/gemini-receipt"
 import { fileToCanvas, recognizeReceipt } from "@/lib/ocr"
 import { parseReceiptText } from "@/lib/parse-receipt"
+import { describeReceipt } from "@/lib/receipt-json"
 import { loadStoredBill, persistable, rememberTableId, rememberedTableId, saveBill } from "@/lib/storage"
 import { planPush, planRemote } from "@/lib/sync-plan"
 import { buildTableLink, createTableId, readTableId, replaceTableParam, stableJson, withTableLink } from "@/lib/table"
-import type { BillState } from "@/lib/types"
+import type { BillState, ParsedReceipt } from "@/lib/types"
 
 type ShareResult = "shared" | "copied" | "aborted" | "failed"
 
@@ -301,18 +303,8 @@ export function BillProvider({ children }: { children: ReactNode }) {
     }
     baseDispatch({ type: "begin-scan", photoUrl })
 
-    try {
-      const text = await recognizeReceipt(canvas, (update) => {
-        if (scanToken.current !== token) return
-        const moved = update.progress === 1 || update.progress - lastProgress.current >= 0.05
-        if (!moved && update.label === lastLabel.current) return
-        lastProgress.current = update.progress
-        lastLabel.current = update.label
-        baseDispatch({ type: "scan-progress", progress: update.progress, label: update.label })
-      })
+    const finish = (parsed: ParsedReceipt, rawText: string) => {
       if (scanToken.current !== token) return
-
-      const parsed = parseReceiptText(text)
       if (source === "demo") {
         const knownPrices = new Set(DEMO_ITEMS.map((item) => item.lineTotalCents))
         const hits = parsed.items.filter((item) => knownPrices.has(item.lineTotalCents)).length
@@ -321,7 +313,7 @@ export function BillProvider({ children }: { children: ReactNode }) {
             type: "scan-success",
             venue: parsed.venue || DEMO_VENUE,
             items: parsed.items,
-            rawText: text,
+            rawText,
             receiptTotalCents: parsed.totalCents ?? DEMO_TOTAL_CENTS,
             notice: null,
           })
@@ -331,7 +323,7 @@ export function BillProvider({ children }: { children: ReactNode }) {
           type: "scan-success",
           venue: DEMO_VENUE,
           items: DEMO_ITEMS,
-          rawText: text || demoReceiptText(),
+          rawText: rawText || demoReceiptText(),
           receiptTotalCents: DEMO_TOTAL_CENTS,
           notice: "De voorbeeldbon is ingevuld. Op een echte foto kan je elk gerecht nog aanpassen.",
         })
@@ -341,7 +333,7 @@ export function BillProvider({ children }: { children: ReactNode }) {
       if (parsed.items.length === 0) {
         baseDispatch({
           type: "scan-empty",
-          rawText: text,
+          rawText,
           message: "Geen gerechten gevonden. Vul ze zelf aan, of maak een scherpere foto.",
         })
         return
@@ -351,10 +343,33 @@ export function BillProvider({ children }: { children: ReactNode }) {
         type: "scan-success",
         venue: parsed.venue ?? "",
         items: parsed.items,
-        rawText: text,
+        rawText,
         receiptTotalCents: parsed.totalCents,
         notice: null,
       })
+    }
+
+    try {
+      if (isFirebaseConfigured()) {
+        baseDispatch({ type: "scan-progress", progress: 0.2, label: "Producten herkennen" })
+        const ai = await readReceiptWithGemini(canvas)
+        if (scanToken.current !== token) return
+        if (ai && ai.items.length > 0) {
+          finish(ai, describeReceipt(ai))
+          return
+        }
+      }
+
+      const text = await recognizeReceipt(canvas, (update) => {
+        if (scanToken.current !== token) return
+        const moved = update.progress === 1 || update.progress - lastProgress.current >= 0.05
+        if (!moved && update.label === lastLabel.current) return
+        lastProgress.current = update.progress
+        lastLabel.current = update.label
+        baseDispatch({ type: "scan-progress", progress: update.progress, label: update.label })
+      })
+      if (scanToken.current !== token) return
+      finish(parseReceiptText(text), text)
     } catch {
       if (scanToken.current !== token) return
       if (source === "demo") {

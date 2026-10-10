@@ -2,6 +2,7 @@
 
 import { useBill } from "@/components/bill-context"
 import { Button } from "@/components/ui/button"
+import { isFirebaseConfigured } from "@/lib/firebase"
 
 export function ScanScreen() {
   const bill = useBill()
@@ -14,7 +15,9 @@ export function ScanScreen() {
         <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">Nota</p>
         <h1 className="mt-2 font-heading text-4xl tracking-tight">De bon wordt gelezen</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          De eerste keer duurt dit iets langer, omdat het Nederlands nog geladen wordt.
+          {isFirebaseConfigured()
+            ? "Eerst leest Gemini de producten. Lukt dat niet, dan leest de app de bon op dit toestel."
+            : "De bon wordt op dit toestel gelezen. De eerste keer duurt dat iets langer."}
         </p>
 
         <div className="mx-auto mt-8 w-full max-w-xs overflow-hidden rounded-2xl bg-card shadow-lg ring-1 ring-border">

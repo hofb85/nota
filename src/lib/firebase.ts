@@ -1,3 +1,4 @@
+import type { FirebaseApp } from "firebase/app"
 import type { Firestore } from "firebase/firestore"
 
 export function isFirebaseConfigured(): boolean {
@@ -22,15 +23,29 @@ function firebaseOptions() {
   }
 }
 
+let appPromise: Promise<FirebaseApp | null> | null = null
 let database: Promise<Firestore | null> | null = null
+
+export function ensureApp(): Promise<FirebaseApp | null> {
+  if (!isFirebaseConfigured()) return Promise.resolve(null)
+  if (!appPromise) {
+    appPromise = import("firebase/app")
+      .then(({ getApps, initializeApp }) => getApps()[0] ?? initializeApp(firebaseOptions()))
+      .catch((error: unknown) => {
+        appPromise = null
+        throw error
+      })
+  }
+  return appPromise
+}
 
 export function ensureDb(): Promise<Firestore | null> {
   if (!isFirebaseConfigured()) return Promise.resolve(null)
   if (!database) {
-    database = import("firebase/app")
-      .then(async ({ getApps, initializeApp }) => {
+    database = ensureApp()
+      .then(async (app) => {
+        if (!app) return null
         const { getFirestore } = await import("firebase/firestore")
-        const app = getApps()[0] ?? initializeApp(firebaseOptions())
         return getFirestore(app)
       })
       .catch((error: unknown) => {

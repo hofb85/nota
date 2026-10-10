@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { isFirebaseConfigured } from "@/lib/firebase"
 import { formatEuros, itemsTotalCents } from "@/lib/money"
 
 type StartAction = "capture" | "demo" | "manual" | "file"
@@ -56,7 +57,11 @@ export function HomeScreen() {
             Fotografeer de rekening. De gerechten komen in de app, daarna wijs je ze toe.
           </p>
         </div>
-        <p className="mt-8 text-sm text-paper/65">De foto blijft op dit toestel.</p>
+        <p className="mt-8 max-w-sm text-sm text-paper/65">
+          {isFirebaseConfigured()
+            ? "Gemini leest de producten op de foto. De foto wordt niet opgeslagen."
+            : "De foto blijft op dit toestel."}
+        </p>
       </section>
 
       <section className="-mt-6 flex flex-1 flex-col rounded-t-[2rem] bg-background px-5 pt-7 pb-10 md:mt-0 md:justify-center md:rounded-none md:px-10">

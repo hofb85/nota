@@ -2,7 +2,7 @@
 
 Nota helpt aan tafel om een rekening te delen. Je maakt een foto van de bon, controleert de gerechten en prijzen, en wijst daarna elk stuk toe aan een persoon.
 
-De foto wordt in de browser gelezen. Ze verlaat het toestel niet en wordt niet in Firestore bewaard.
+Met Firebase leest Gemini de foto en haalt daar de producten en prijzen uit. De foto wordt niet in Firestore bewaard. Zonder Firebase blijft de foto op het toestel en leest de app de bon lokaal.
 
 ## Lokaal starten
 
@@ -49,6 +49,8 @@ cp .env.example .env.local
 ```
 
 Vul in `.env.local` de zes `NEXT_PUBLIC_FIREBASE_*` waarden. Herstart daarna `npm run dev`. Een nieuwe rekening krijgt dan een tafellink.
+
+Zet daarna in de Firebase-console **Build → AI Logic → Get started** aan. Dat koppelt Gemini aan dezelfde webapp. Een foto van de bon gaat dan naar Gemini, dat de merken, gerechten, aantallen en lijntotalen teruggeeft. Lukt die stap niet, dan valt de app terug op de lokale lezer.
 
 ### 2. GitHub
 

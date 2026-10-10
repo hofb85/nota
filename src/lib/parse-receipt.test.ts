@@ -90,6 +90,39 @@ describe("parseReceiptText", () => {
     ])
   })
 
+  it("leest een Belgische bon met btw-letter, cash en een totaal met aantal", () => {
+    const parsed = parseReceiptText(`
+      Thursdays
+      cafe
+      BE0476371354
+      Marktstraat 63 - 1745 Opwijk
+      052/35.37.35
+      www.thursdays.be
+      info@thursdayscafe.be
+      REKENING 3969
+      Tafel 1
+      12
+      2 Jupiler 25cl 4,60 A
+      2 Affligem Blond 8,00 A
+      1 Orval 5,00 A
+      5 Totaal 17,60
+      Netto A-Hoog 14,55
+      21% A-Hoog 3,05
+      Cash 17,60
+      Zaterdag 10-10-26 0:35:52
+      #559499 YNKE
+      Like us on Facebook!
+    `)
+
+    expect(parsed.venue).toBe("Thursdays cafe")
+    expect(parsed.totalCents).toBe(1760)
+    expect(parsed.items).toEqual([
+      { name: "Jupiler 25cl", quantity: 2, lineTotalCents: 460 },
+      { name: "Affligem Blond", quantity: 2, lineTotalCents: 800 },
+      { name: "Orval", quantity: 1, lineTotalCents: 500 },
+    ])
+  })
+
   it("negeert een btw-blok met percentages", () => {
     const parsed = parseReceiptText(`
       Friet 4,50
