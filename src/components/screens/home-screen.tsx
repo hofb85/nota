@@ -54,7 +54,7 @@ export function HomeScreen() {
           <p className="text-xs font-medium tracking-[0.22em] text-paper/70 uppercase">Aan tafel</p>
           <h1 className="mt-3 font-heading text-7xl leading-none italic md:text-8xl">Nota</h1>
           <p className="mt-4 max-w-sm text-lg leading-7 text-paper/85">
-            Fotografeer de rekening. De gerechten komen in de app, daarna wijs je ze toe.
+            Split de rekening makkelijk met vrienden en familie.
           </p>
         </div>
         <p className="mt-8 max-w-sm text-sm text-paper/65">
