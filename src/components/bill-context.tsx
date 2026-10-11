@@ -271,7 +271,7 @@ export function BillProvider({ children }: { children: ReactNode }) {
 
   const shareMessage = useCallback(
     async (text: string): Promise<ShareResult> => {
-      const link = tableId && isFirebaseConfigured() ? buildTableLink(window.location.origin, tableId) : null
+      const link = tableId && isFirebaseConfigured() ? buildTableLink(window.location.origin, tableId, window.location.pathname) : null
       const payload = withTableLink(text, link)
       if (typeof navigator.share === "function") {
         try {
@@ -425,7 +425,7 @@ export function BillProvider({ children }: { children: ReactNode }) {
 
   const tableLink =
     tableId && isFirebaseConfigured() && typeof window !== "undefined"
-      ? buildTableLink(window.location.origin, tableId)
+      ? buildTableLink(window.location.origin, tableId, window.location.pathname)
       : null
 
   const value: BillContextValue = {

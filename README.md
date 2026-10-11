@@ -35,7 +35,7 @@ npm test
 
 ## Online op Firebase
 
-Nota wordt als statische site gebouwd naar `out/` en gehost met Firebase Hosting. De rekening zelf staat in Firestore, collectie `bills`. Het document-id is een lange toevalscode. Alleen wie de link heeft, kan die ene rekening lezen of bijwerken. Verwijderen en de hele collectie overlopen zijn dicht.
+Nota wordt als statische site gebouwd naar `out/`. Elke push naar `main` publiceert die site op GitHub Pages: https://hofb85.github.io/nota/ . De rekening zelf staat in Firestore, collectie `bills`. Firebase Hosting op `nota-31048.web.app` wordt alleen bijgewerkt als je lokaal `npm run deploy` draait, omdat daarvoor jouw Google-account nodig is. Het document-id is een lange toevalscode. Alleen wie de link heeft, kan die ene rekening lezen of bijwerken. Verwijderen en de hele collectie overlopen zijn dicht.
 
 ### 1. Firebase-project
 

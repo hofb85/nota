@@ -50,6 +50,9 @@ describe("tafel", () => {
     expect(buildTableLink("http://127.0.0.1:47231/ergens", "abcdefghijklmnopqrst")).toBe(
       "http://127.0.0.1:47231/?tafel=abcdefghijklmnopqrst",
     )
+    expect(buildTableLink("https://hofb85.github.io", "abcdefghijklmnopqrst", "/nota/")).toBe(
+      "https://hofb85.github.io/nota/?tafel=abcdefghijklmnopqrst",
+    )
   })
 
   it("voegt de tafellink toe aan het overzicht", () => {

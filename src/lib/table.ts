@@ -16,8 +16,9 @@ export function readTableId(search: string): string | null {
   return isTableId(id) ? id : null
 }
 
-export function buildTableLink(origin: string, tableId: string): string {
-  const url = new URL("/", origin)
+export function buildTableLink(origin: string, tableId: string, pathname = "/"): string {
+  const path = pathname.startsWith("/") ? pathname : `/${pathname}`
+  const url = new URL(path, origin)
   url.searchParams.set("tafel", tableId)
   return url.toString()
 }

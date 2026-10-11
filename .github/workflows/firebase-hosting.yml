@@ -1,4 +1,4 @@
-name: Test en deploy naar Firebase
+name: Test en publiceer
 
 on:
   push:
@@ -7,10 +7,15 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +28,7 @@ jobs:
       - run: npm test
       - run: npm run build
         env:
+          NEXT_PUBLIC_BASE_PATH: /nota
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
           NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
@@ -42,3 +48,10 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
           npx --yes firebase-tools@14 deploy --only firestore:rules,hosting --non-interactive --project "$FIREBASE_PROJECT_ID"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+      - id: deployment
+        uses: actions/deploy-pages@v4
