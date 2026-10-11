@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0 --port 47231",
     "build": "next build",
+    "deploy": "npm run build && npx --yes firebase-tools@14 deploy --only hosting --project nota-31048",
     "start": "next start --hostname 0.0.0.0 --port 47231",
     "lint": "eslint",
     "test": "vitest run"

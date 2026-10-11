@@ -80,11 +80,16 @@ Het serviceaccount heeft de rollen **Firebase Hosting Admin** en **Firebase Rule
 
 ### 3. Zelf publiceren
 
+Eenmalig, in deze map:
+
 ```bash
-npm test
-npm run build
 npx firebase-tools@14 login
-npx firebase-tools@14 deploy --only firestore:rules,hosting --project JOUW_PROJECT_ID
 ```
 
-De site staat daarna op `https://JOUW_PROJECT_ID.web.app`. De build leest `.env.local`, dus de Firebase-waarden moeten daar staan vóór `npm run build`.
+Daarna publiceert één commando de site:
+
+```bash
+npm run deploy
+```
+
+Dat bouwt de app en zet `out/` op Firebase Hosting voor project `nota-31048`. De site staat op `https://nota-31048.web.app`. De build leest `.env.local`, dus dat bestand moet in deze map staan. Het commando werkt alleen in de projectmap, niet in je gebruikersmap.
